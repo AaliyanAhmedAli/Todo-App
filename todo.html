@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+
+
+    <style>
+        .btn-edit {
+          background-color: #17a2b8;
+          color: #fff;
+        }
+      </style>
+</head>
+<body>
+    <section class="vh-100" style="background-color: #eee;">
+        <div class="container py-5 h-100">
+          <div class="row d-flex justify-content-center align-items-center h-100">
+            <div class="col col-lg-9 col-xl-7">
+              <div class="card rounded-3">
+                <div class="card-body p-4">
+      
+                  <h4 class="text-center my-3 pb-3">To Do App</h4>
+      
+                  <form class="row row-cols-lg-auto g-3 justify-content-center align-items-center mb-4 pb-2">
+                    <div class="col-12">
+                      <div class="form-outline">
+                        <input type="text" id="form1" class="form-control" />
+                        <label class="form-label" for="form1">Enter a task here</label>
+                      </div>
+                    </div>
+      
+                    <div class="col-12">
+                      <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+      
+                    <div class="col-12">
+                        <button id="deleteAllButton" class="btn btn-danger">Delete All</button>
+                      </div>
+                  </form>
+      
+                  <table class="table mb-4">
+                    <thead>
+                      <tr>
+                        <th scope="col">No.</th>
+                        <th scope="col">Todo item</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row">1</th>
+                        <td>Buy groceries for next week</td>
+                        <td>In progress</td>
+                        <td>
+                          <button type="submit" class="btn btn-danger">Delete</button>
+                          
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row">2</th>
+                        <td>Renew car insurance</td>
+                        <td>In progress</td>
+                        <td>
+                          <button type="submit" class="btn btn-danger">Delete</button>
+                          <button class="btn btn-info ms-1 btn-edit" onclick="editTask('${doc.id}', '${task.title}')">Edit</button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row">3</th>
+                        <td>Sign up for online course</td>
+                        <td>In progress</td>
+                        <td>
+                          <button type="submit" class="btn btn-danger">Delete</button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+      
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Include Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<!-- Your HTML code here -->
+
+<script>
+  // Initialize Firebase
+  var firebaseConfig = {
+    apiKey: "AIzaSyB63nN8_9qyMv93NSsSDb-tFWMWiYBuHQs",
+    authDomain: "my-all-work.firebaseapp.com",
+    projectId: "my-all-work",
+    storageBucket: "my-all-work.appspot.com",
+    messagingSenderId: "353575692381",
+    appId: "1:353575692381:web:acdaf37cfb3ce6657c85b4",
+    measurementId: "G-WP0D1RYMRG"
+  };
+  
+  firebase.initializeApp(firebaseConfig);
+  
+  const db = firebase.firestore();
+
+  // Reference to the table body
+  const tableBody = document.querySelector("tbody");
+
+  // Function to render tasks from Firestore
+  function renderTasks() {
+    tableBody.innerHTML = "";
+    db.collection("tasks").get().then(querySnapshot => {
+      querySnapshot.forEach(doc => {
+        const task = doc.data();
+        const row = `
+          <tr>
+            <th scope="row">${task.id}</th>
+            <td>${task.title}</td>
+            <td>${task.status}</td>
+            <td>
+              <button class="btn btn-danger" onclick="deleteTask('${doc.id}')">Delete</button>
+            </td>
+          </tr>
+        `;
+        tableBody.innerHTML += row;
+      });
+    });
+  }
+
+  // Function to add a new task
+  function addTask() {
+    const taskTitle = document.getElementById("form1").value;
+    db.collection("tasks").add({
+      title: taskTitle,
+      status: "In progress"
+    }).then(() => {
+      renderTasks();
+    });
+  }
+
+  // Function to delete a task
+  function deleteTask(taskId) {
+    db.collection("tasks").doc(taskId).delete().then(() => {
+      renderTasks();
+    });
+  }
+
+  // Function to mark a task as finished
+  function finishTask(taskId) {
+    db.collection("tasks").doc(taskId).update({
+      status: "Finished"
+    }).then(() => {
+      renderTasks();
+    });
+  }
+
+  // Attach form submission event
+  const form = document.querySelector("form");
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    addTask();
+  });
+
+  // Initial rendering of tasks
+  renderTasks();
+
+
+  // Function to delete all tasks
+function deleteAllTasks() {
+  db.collection("tasks").get().then(querySnapshot => {
+    const batch = db.batch();
+    querySnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    return batch.commit();
+  }).then(() => {
+    renderTasks();
+  });
+}
+
+// Attach click event to 'Delete All' button
+const deleteAllButton = document.getElementById("deleteAllButton");
+deleteAllButton.addEventListener("click", deleteAllTasks);
+
+function renderTasks() {
+  tableBody.innerHTML = "";
+  db.collection("tasks").get().then(querySnapshot => {
+    querySnapshot.forEach(doc => {
+      const task = doc.data();
+      const row = `
+        <tr>
+          <th scope="row">${task.id}</th>
+          <td>${task.title}</td>
+          <td>${task.status}</td>
+          <td>
+            <button class="btn btn-danger" onclick="deleteTask('${doc.id}')">Delete</button>
+          </td>
+        </tr>
+      `;
+      tableBody.innerHTML += row;
+    });
+  });
+}
+
+
+
+
+function renderTasks() {
+  tableBody.innerHTML = "";
+  db.collection("tasks").get().then(querySnapshot => {
+    querySnapshot.forEach(doc => {
+      const task = doc.data();
+      const row = `
+        <tr>
+          <th scope="row">${task.id}</th>
+          <td>${task.title}</td>
+          <td>${task.status}</td>
+          <td>
+            <button class="btn btn-danger" onclick="deleteTask('${doc.id}')">Delete</button>
+            <button class="btn btn-info ms-1" onclick="editTask('${doc.id}', '${task.title}')">Edit</button>
+          </td>
+        </tr>
+      `;
+      tableBody.innerHTML += row;
+    });
+  });
+}
+// Function to edit a task
+function editTask(taskId, currentTitle) {
+  const newTitle = (form`<input type="text"><input/>`, currentTitle);
+  if (newTitle !== null && newTitle !== "") {
+    db.collection("tasks").doc(taskId).update({
+      title: newTitle
+    }).then(() => {
+      renderTasks();
+    });
+  }
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
+</body>
+</html>
